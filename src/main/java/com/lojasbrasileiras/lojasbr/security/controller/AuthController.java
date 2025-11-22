@@ -6,6 +6,9 @@ import com.lojasbrasileiras.lojasbr.user.dto.*;
 import com.lojasbrasileiras.lojasbr.user.mapper.UserMapper;
 import com.lojasbrasileiras.lojasbr.user.model.User;
 import com.lojasbrasileiras.lojasbr.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
@@ -13,9 +16,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@RestController
+@Tag(name = "Auth", description = "Autenticação e registro")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -23,9 +27,8 @@ public class AuthController {
     private final JwtProvider jwtProvider;
     private final UserMapper userMapper;
 
-    // ---------------------------------------------------------
-    // REGISTER
-    // ---------------------------------------------------------
+    @Operation(summary = "Registra usuário", description = "Cria um novo usuário no sistema")
+    @ApiResponse(responseCode = "201", description = "Usuário criado")
     @PostMapping("/register")
     public ResponseEntity<UserResponseDTO> register(@RequestBody UserRegisterDTO dto) {
         User created = userService.createUser(dto);
@@ -33,13 +36,11 @@ public class AuthController {
         UserResponseDTO response = userMapper.toResponseDTO(created);
 
         return ResponseEntity
-                .created(null) // opcional: URI.create("/users/" + created.getId())
+                .created(null)
                 .body(response);
     }
 
-    // ---------------------------------------------------------
-    // LOGIN
-    // ---------------------------------------------------------
+    @Operation(summary = "Login", description = "Autentica e retorna JWT")
     @PostMapping("/login")
     public ResponseEntity<TokenResponseDTO> login(@RequestBody UserLoginDTO dto) {
         // autentica (lança excepción se inválido)
@@ -55,22 +56,5 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    // Optional: refresh token endpoint (implementar se precisar)
-    @PostMapping("/refresh")
-    public ResponseEntity<TokenResponseDTO> refreshToken(@RequestHeader("Authorization") String bearer) {
-        if (bearer == null || !bearer.startsWith("Bearer ")) {
-            return ResponseEntity.badRequest().build();
-        }
-        String token = bearer.substring(7);
-
-        if (!jwtProvider.validateToken(token)) {
-            return ResponseEntity.status(401).build();
-        }
-
-        String username = jwtProvider.getUsernameFromToken(token);
-        String newToken = jwtProvider.generateToken(username);
-
-        return ResponseEntity.ok(new TokenResponseDTO(newToken, "Bearer", jwtProvider.getExpirationInSeconds()));
-    }
 }
 
