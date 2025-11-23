@@ -1,6 +1,7 @@
 package com.lojasbrasileiras.lojasbr.user.service;
 
 import com.lojasbrasileiras.lojasbr.user.dto.UserRegisterDTO;
+import com.lojasbrasileiras.lojasbr.user.dto.UserResponseDTO;
 import com.lojasbrasileiras.lojasbr.user.dto.UserUpdateDTO;
 import com.lojasbrasileiras.lojasbr.user.mapper.UserMapper;
 import com.lojasbrasileiras.lojasbr.user.model.User;
@@ -28,22 +29,26 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public List<UserResponseDTO> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        return users.stream()
+                .map(userMapper::toResponseDTO)
+                .toList();
     }
 
-    public User getUserById(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado: " + id));
+    public UserResponseDTO getUserById(Long id) {
+        User user = getUserEntityById(id);
+        return userMapper.toResponseDTO(user);
     }
 
-    public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com email: " + email));
+    public UserResponseDTO getUserByEmail(String email) {
+        User user = getUserEntityByEmail(email);
+        return userMapper.toResponseDTO(user);
     }
 
-    public User patchUser(Long id, UserUpdateDTO dto) {
-        User user = getUserById(id);
+    public UserResponseDTO patchUser(Long id, UserUpdateDTO dto) {
+
+        User user = getUserEntityById(id);
 
         userMapper.updateEntityFromUpdateDTO(dto, user);
 
@@ -51,12 +56,24 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(dto.getPassword()));
         }
 
-        return userRepository.save(user);
+        User updated = userRepository.save(user);
+        return userMapper.toResponseDTO(updated);
     }
 
     public void deleteUser(Long id) {
-        User user = getUserById(id);
+        User user = getUserEntityById(id);
         userRepository.delete(user);
+    }
+
+    // MÉTODOS INTERNOS — NOTA: não expõem entidades no controller
+    private User getUserEntityById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado: " + id));
+    }
+
+    private User getUserEntityByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com email: " + email));
     }
 
 }

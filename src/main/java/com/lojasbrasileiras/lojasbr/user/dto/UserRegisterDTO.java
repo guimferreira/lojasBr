@@ -9,9 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-
 public class UserRegisterDTO {
-
     private Long id;
     private String cpf;
     private String email;
